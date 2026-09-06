@@ -760,6 +760,10 @@ echo "==> Stowing dotfiles into $USER_HOME"
 run_as_user stow --dir="$DOTFILES_DIR" --target="$USER_HOME" "$@"
 DOTFILES_ROLLBACK_REQUIRED=false
 
+# Restore plugins from the stowed package.toml before any Wi-Fi handoff.
+echo "==> Installing Yazi plugins for $REAL_USER"
+run_as_user ya pkg install
+
 SWAY_CONFIG="$USER_HOME/.config/sway/config"
 AUDIO_START="$USER_HOME/.config/sway/scripts/start-audio.sh"
 
