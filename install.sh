@@ -632,7 +632,7 @@ echo "==> Installing graphics, Sway, Noctalia, apps, and CLI tools"
 sudo xbps-install -y linux-firmware-intel mesa-dri vulkan-loader mesa-vulkan-intel intel-video-accel
 
 # Portals and user directories.
-sudo xbps-install -y xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk xdg-utils xdg-user-dirs xdg-user-dirs-gtk
+sudo xbps-install -y xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk xdg-utils xdg-user-dirs xdg-user-dirs-gtk gnome-keyring
 run_as_user xdg-user-dirs-update
 
 # Fonts.
