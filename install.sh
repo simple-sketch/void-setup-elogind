@@ -643,14 +643,9 @@ sudo xbps-install -y dejavu-fonts-ttf noto-fonts-cjk noto-fonts-emoji noto-fonts
 sudo xbps-install -y python3 python3-gobject python3-cairo gtk+3
 
 # Desktop apps and CLI tools, including Git and GNU Stow for the dotfiles step.
-sudo xbps-install -y perl-File-MimeInfo shfmt shellcheck ddcutil kitty swayimg nodejs openjdk25 delta git git-lfs eza bash bash-completion stow neovide shikane alacritty wmenu vim \
+sudo xbps-install -y perl-File-MimeInfo shfmt shellcheck ddcutil kitty swayimg nodejs openjdk25 delta git eza bash bash-completion stow neovide shikane alacritty wmenu vim \
   playerctl libnotify satty flameshot btop fastfetch brightnessctl base-devel wl-clipboard sway foot firefox vlc xtools vsv lazygit neovim ghostty rsync yazi bat upower \
   ffmpeg 7zip unzip zip unrar ouch jq poppler fd ripgrep fzf zoxide resvg ImageMagick noctalia bibata-modern-ice
-
-# Configure Git LFS globally for the real user so future clones fetch LFS
-# objects without modifying this installer checkout's hooks.
-echo "==> Initializing Git LFS for $REAL_USER"
-run_as_user git lfs install --skip-repo
 
 # Audio and Bluetooth; elogind supplies device ACLs instead of an audio group.
 sudo xbps-install -y bluez alsa-utils alsa-pipewire libjack-pipewire libspa-bluetooth pipewire wireplumber wireplumber-elogind
