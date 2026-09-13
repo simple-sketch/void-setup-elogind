@@ -759,6 +759,13 @@ DOTFILES_ROLLBACK_REQUIRED=false
 echo "==> Installing Yazi plugins for $REAL_USER"
 run_as_user ya pkg install
 
+# Install stable Zed for the desktop user before any Wi-Fi handoff.
+# Download fully before execution so a failed transfer cannot look successful.
+echo "==> Installing Zed for $REAL_USER"
+curl -fL --retry 3 -o "$PREFLIGHT_DIR/zed-install.sh" https://zed.dev/install.sh
+chmod 0644 "$PREFLIGHT_DIR/zed-install.sh"
+run_as_user env ZED_CHANNEL=stable sh "$PREFLIGHT_DIR/zed-install.sh"
+
 SWAY_CONFIG="$USER_HOME/.config/sway/config"
 AUDIO_START="$USER_HOME/.config/sway/scripts/start-audio.sh"
 
