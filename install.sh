@@ -632,7 +632,7 @@ echo "==> Installing graphics, Sway, Noctalia, apps, and CLI tools"
 sudo xbps-install -y linux-firmware-intel mesa-dri vulkan-loader mesa-vulkan-intel intel-video-accel
 
 # Portals and user directories.
-sudo xbps-install -y xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk xdg-utils xdg-user-dirs xdg-user-dirs-gtk gnome-keyring
+sudo xbps-install -y xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk xdg-utils xdg-user-dirs xdg-user-dirs-gtk
 run_as_user xdg-user-dirs-update
 
 # Fonts.
@@ -643,7 +643,7 @@ sudo xbps-install -y dejavu-fonts-ttf noto-fonts-cjk noto-fonts-emoji noto-fonts
 sudo xbps-install -y python3 python3-gobject python3-cairo gtk+3
 
 # Desktop apps and CLI tools, including Git and GNU Stow for the dotfiles step.
-sudo xbps-install -y perl-File-MimeInfo shfmt shellcheck ddcutil kitty swayimg nodejs openjdk25 delta git eza bash bash-completion stow neovide shikane alacritty wmenu vim \
+sudo xbps-install -y gnome-keyring perl-File-MimeInfo shfmt shellcheck ddcutil kitty swayimg nodejs openjdk25 delta git eza bash bash-completion stow neovide shikane alacritty wmenu vim \
   playerctl libnotify btop fastfetch brightnessctl base-devel wl-clipboard sway foot firefox vlc xtools vsv lazygit neovim ghostty rsync yazi bat upower \
   ffmpeg 7zip unzip zip unrar ouch jq poppler fd ripgrep fzf zoxide resvg ImageMagick noctalia bibata-modern-ice
 
