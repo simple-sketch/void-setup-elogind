@@ -636,7 +636,7 @@ sudo xbps-install -y xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-porta
 run_as_user xdg-user-dirs-update
 
 # Fonts.
-sudo xbps-install -y dejavu-fonts-ttf noto-fonts-cjk noto-fonts-emoji noto-fonts-ttf
+sudo xbps-install -y dejavu-fonts-ttf noto-fonts-emoji noto-fonts-ttf
 
 # Runtime for the Super+title-bar workspace selector in the Sway dotfiles.
 # GTK pulls in the GLib/Gdk/Pango typelibs; no build or GUI-test tools are needed.
