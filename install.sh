@@ -653,9 +653,16 @@ sudo xbps-install -y bluez alsa-utils alsa-pipewire libjack-pipewire libspa-blue
 # Install and configure the remaining system services before touching user
 # dotfiles. Install iwd while the existing network connection is still intact.
 echo "==> Configuring hardware, power, and network prerequisites"
-sudo xbps-install -y tlp iwd
+sudo xbps-install -y tlp tlp-pd iwd
 
 enable_service tlp
+enable_service tlp-pd
+sudo tlp start
+
+# Noctalia targets powerprofilesctl to gather active hardware state and switch settings.
+# Inject fallback symlink pointing to TLP interface pretending to be power-profile-daemon.
+sudo ln -s /usr/bin/tlpctl /usr/local/bin/powerprofilesctl
+
 enable_service alsa
 sudo usermod -aG bluetooth "$REAL_USER"
 sudo rfkill unblock bluetooth || true
