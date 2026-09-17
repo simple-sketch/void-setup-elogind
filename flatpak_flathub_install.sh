@@ -22,3 +22,6 @@ sudo flatpak install --system --assumeyes flathub \
   no.bragefuglseth.Keypunch \
   io.dbeaver.DBeaverCommunity \
   com.getpostman.Postman
+
+# Wayland crash issue fix. Enable Wayland Socket: Grant the Postman Flatpak permission to access the Wayland display socket.
+flatpak override --user --socket=wayland com.getpostman.Postman
