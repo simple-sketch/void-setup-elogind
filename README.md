@@ -25,7 +25,8 @@ sudo reboot
 The installer is safe to rerun after a failed download. It starts the core
 D-Bus, elogind, polkit, and socklog services before installing the desktop and
 stowing user configuration, so a later failure does not leave those services
-merely installed but disabled.
+merely installed but disabled. TLP starts in its power-saver profile on every
+boot; the desktop can still select another profile for the current session.
 
 ## Wi-Fi migration
 
@@ -59,7 +60,8 @@ IWD_SWITCH=force ./install.sh
 After installation (and preferably after reboot), verify the system with:
 
 ```sh
-sudo sv status dbus elogind polkitd socklog-unix nanoklogd dhcpcd
+sudo sv status dbus elogind polkitd socklog-unix nanoklogd dhcpcd tlp tlp-pd
+sudo tlp-stat -s
 loginctl session-status
 wpctl status
 ```
