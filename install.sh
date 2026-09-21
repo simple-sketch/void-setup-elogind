@@ -427,6 +427,11 @@ context.properties = {
     module.x11.bell = false
 }
 EOF
+cat >"$PREFLIGHT_DIR/tlp-default-profile.conf" <<'EOF'
+# Start TLP in power-saver mode instead of selecting a profile by power source.
+TLP_AUTO_SWITCH=0
+TLP_PROFILE_DEFAULT=SAV
+EOF
 chmod 0644 "$PREFLIGHT_DIR"/*
 
 # Validate an existing checkout without assuming Git has already been installed.
@@ -505,10 +510,12 @@ PIPEWIRE_DIR="$USER_HOME/.config/pipewire/pipewire.conf.d"
 require_root_directory_or_absent /etc/xbps.d
 require_root_directory_or_absent /etc/alsa
 require_root_directory_or_absent /etc/alsa/conf.d
+require_root_directory_or_absent /etc/tlp.d
 require_user_directory_or_absent "$USER_HOME/.config"
 require_user_directory_or_absent "$USER_HOME/.config/pipewire"
 require_user_directory_or_absent "$PIPEWIRE_DIR"
 require_root_file_state /etc/xbps.d/10-voiders-community.conf "$PREFLIGHT_DIR/voiders.conf"
+require_root_file_state /etc/tlp.d/99-default-power-saver.conf "$PREFLIGHT_DIR/tlp-default-profile.conf"
 require_root_link_state /etc/alsa/conf.d/50-pipewire.conf /usr/share/alsa/alsa.conf.d/50-pipewire.conf
 require_root_link_state /etc/alsa/conf.d/99-pipewire-default.conf /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf
 require_user_link_state "$PIPEWIRE_DIR/10-wireplumber.conf" /usr/share/examples/wireplumber/10-wireplumber.conf
@@ -660,6 +667,11 @@ sudo xbps-install -y bluez alsa-utils alsa-pipewire libjack-pipewire libspa-blue
 # dotfiles. Install iwd while the existing network connection is still intact.
 echo "==> Configuring hardware, power, and network prerequisites"
 sudo xbps-install -y tlp tlp-pd iwd
+
+# Disable power-source switching so every boot starts with TLP's power-saver
+# profile. Users can still select another profile through tlp-pd afterward.
+ensure_root_directory /etc/tlp.d
+install_root_file_if_absent /etc/tlp.d/99-default-power-saver.conf "$PREFLIGHT_DIR/tlp-default-profile.conf"
 
 enable_service tlp
 enable_service tlp-pd
