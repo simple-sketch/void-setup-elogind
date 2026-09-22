@@ -642,8 +642,8 @@ sudo xbps-install -y linux-firmware-intel mesa-dri vulkan-loader mesa-vulkan-int
 sudo xbps-install -y xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk xdg-utils xdg-user-dirs xdg-user-dirs-gtk
 run_as_user xdg-user-dirs-update
 
-# Fonts.
-sudo xbps-install -y dejavu-fonts-ttf noto-fonts-emoji noto-fonts-ttf
+# Basic desktop font.
+sudo xbps-install -y dejavu-fonts-ttf
 
 # Runtime for the Super+title-bar workspace selector in the Sway dotfiles.
 # GTK pulls in the GLib/Gdk/Pango typelibs; no build or GUI-test tools are needed.

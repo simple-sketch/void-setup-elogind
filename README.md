@@ -72,5 +72,6 @@ login. The installer also warns about dangling links under `/var/service`.
 ## Optional installs
 
 ```sh
+./install_fonts.sh            # Noto, emoji, and Nerd Fonts
 ./flatpak_flathub_install.sh  # Flathub, Keypunch, DBeaver, and Postman
 ```
