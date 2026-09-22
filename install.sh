@@ -650,15 +650,13 @@ sudo xbps-install -y dejavu-fonts-ttf noto-fonts-emoji noto-fonts-ttf
 sudo xbps-install -y python3 python3-gobject python3-cairo gtk+3
 
 # Desktop apps and CLI tools, including Git and GNU Stow for the dotfiles step.
-sudo xbps-install -y Thunar thunar-volman thunar-archive-plugin udisks2 gvfs tldr github-cli gnome-keyring \
+sudo xbps-install -y Thunar thunar-volman thunar-archive-plugin gvfs tldr github-cli gnome-keyring \
   perl-File-MimeInfo shfmt shellcheck ddcutil kitty swayimg nodejs openjdk25 delta git eza \
   bash bash-completion stow neovide shikane alacritty wmenu vim \
   playerctl libnotify btop fastfetch brightnessctl base-devel wl-clipboard sway foot firefox \
   vlc xtools vsv lazygit neovim ghostty rsync yazi bat upower \
   ffmpeg 7zip unzip zip unrar ouch jq poppler fd ripgrep fzf zoxide resvg ImageMagick noctalia bibata-modern-ice
 
-# Enable udisks2 so Thunar can detect and mount removable USB drives.
-enable_service udisks2
 
 # Audio and Bluetooth; elogind supplies device ACLs instead of an audio group.
 sudo xbps-install -y bluez alsa-utils alsa-pipewire libjack-pipewire libspa-bluetooth pipewire wireplumber wireplumber-elogind
