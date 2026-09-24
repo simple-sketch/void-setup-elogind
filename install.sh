@@ -650,7 +650,7 @@ sudo xbps-install -y dejavu-fonts-ttf
 sudo xbps-install -y python3 python3-gobject python3-cairo gtk+3
 
 # Desktop apps and CLI tools, including Git and GNU Stow for the dotfiles step.
-sudo xbps-install -y Thunar thunar-volman thunar-archive-plugin gvfs tldr github-cli gnome-keyring \
+sudo xbps-install -y engrampa Thunar thunar-volman thunar-archive-plugin gvfs tldr github-cli gnome-keyring \
   perl-File-MimeInfo shfmt shellcheck ddcutil kitty swayimg nodejs openjdk25 delta git eza \
   bash bash-completion stow neovide shikane alacritty wmenu vim \
   playerctl libnotify btop fastfetch brightnessctl base-devel wl-clipboard sway foot firefox \
