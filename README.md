@@ -1,38 +1,34 @@
 # Void Linux Sway + Noctalia (elogind)
 
-These scripts turn a plain Void Linux installation into an Intel Sway desktop
-with Noctalia, PipeWire, and elogind. The main installer targets x86_64 glibc:
-it enables multilib repositories and installs Intel graphics packages.
+Installer scripts for setting up a Void Linux Sway desktop with Noctalia,
+PipeWire, elogind, and Intel graphics support.
 
-The desktop configuration lives in
-[dotfiles-stow](https://github.com/simple-sketch/dotfiles-stow). The installer
-clones that repository to `~/dotfiles-stow` and uses GNU Stow to symlink its
-packages into the home directory.
+The main installer is intended for x86_64 glibc systems with an Intel GPU. It
+also clones [dotfiles-stow](https://github.com/simple-sketch/dotfiles-stow) to
+`~/dotfiles-stow` and uses GNU Stow to link the desktop configuration.
 
-## Prerequisites
+## Requirements
 
-- A working Void Linux network connection
-- A normal user with configured `sudo` access
-- An Intel GPU
+- Void Linux with working networking
+- A normal user with `sudo`
+- Intel GPU
 
-Run the installer as your normal user, not directly as root:
+## Install
+
+Run as your normal user:
 
 ```sh
 ./install.sh
 sudo reboot
 ```
 
-The installer is safe to rerun after a failed download. It starts the core
-D-Bus, elogind, polkit, and socklog services before installing the desktop and
-stowing user configuration, so a later failure does not leave those services
-merely installed but disabled. TLP starts in its power-saver profile on every
-boot; the desktop can still select another profile for the current session.
+The installer can be rerun if a download fails.
 
-## Wi-Fi migration
+## Wi-Fi
 
-The default `IWD_SWITCH=auto` mode will not disconnect an enabled
-`wpa_supplicant` service. It installs iwd and keeps the existing connection;
-you can migrate after the rest of the setup succeeds:
+By default, the installer will not interrupt an active `wpa_supplicant`
+connection. If `wpa_supplicant` is enabled, finish the install first, then switch
+to iwd manually:
 
 ```sh
 sudo sv -w 15 stop wpa_supplicant
@@ -43,21 +39,16 @@ sudo sv up iwd
 sudo iwctl
 ```
 
-This deliberately interrupts Wi-Fi only after installation is complete. Inside
-`iwctl`, list devices and networks, then connect. The saved iwd profile will
-reconnect on later boots, while dhcpcd obtains the IP address. If
-`wpa_supplicant` is not enabled, the installer enables iwd automatically.
-
-To force the handoff during installation, use the following only when Ethernet
-is available or an iwd profile is already provisioned in `/var/lib/iwd`:
+Only force the switch during install if Ethernet is available or iwd is already
+configured:
 
 ```sh
 IWD_SWITCH=force ./install.sh
 ```
 
-## Service checks
+## Check services
 
-After installation (and preferably after reboot), verify the system with:
+After reboot:
 
 ```sh
 sudo sv status dbus elogind polkitd socklog-unix nanoklogd dhcpcd tlp tlp-pd
@@ -66,12 +57,11 @@ loginctl session-status
 wpctl status
 ```
 
-Group changes for `socklog`, `video`, and `bluetooth` take effect at the next
-login. The installer also warns about dangling links under `/var/service`.
+Group changes take effect after logging in again.
 
-## Optional installs
+## Optional
 
 ```sh
-./install_fonts.sh            # Noto, emoji, and Nerd Fonts
-./flatpak_flathub_install.sh  # Flathub, Keypunch, DBeaver, and Postman
+./install_fonts.sh            # fonts
+./flatpak_flathub_install.sh  # Flathub apps
 ```
