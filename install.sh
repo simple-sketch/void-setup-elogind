@@ -192,20 +192,6 @@ require_root_file_state() {
   fi
 }
 
-require_user_file_state() {
-  managed_path=$1
-  expected_file=$2
-
-  user_path_exists "$managed_path" || return 0
-
-  if ! run_as_user test -f "$managed_path" || run_as_user test -L "$managed_path" ||
-    ! run_as_user cmp -s "$expected_file" "$managed_path"; then
-    echo "configuration collision: $managed_path differs from the installer-managed file" >&2
-    echo "move or remove it, then rerun the installer" >&2
-    exit 1
-  fi
-}
-
 require_root_link_state() {
   managed_path=$1
   expected_target=$2
@@ -287,20 +273,6 @@ install_root_file_if_absent() {
   if ! sudo sh -c 'set -C; umask 022; cat "$1" >"$2"' sh "$expected_file" "$managed_path"; then
     require_root_file_state "$managed_path" "$expected_file"
     root_path_exists "$managed_path" || return 1
-  fi
-}
-
-install_user_file_if_absent() {
-  managed_path=$1
-  expected_file=$2
-  require_user_file_state "$managed_path" "$expected_file"
-  user_path_exists "$managed_path" && return 0
-
-  # The positional parameters intentionally expand in the nested shell.
-  # shellcheck disable=SC2016
-  if ! run_as_user sh -c 'set -C; umask 022; cat "$1" >"$2"' sh "$expected_file" "$managed_path"; then
-    require_user_file_state "$managed_path" "$expected_file"
-    user_path_exists "$managed_path" || return 1
   fi
 }
 
@@ -421,12 +393,6 @@ chmod 0755 "$PREFLIGHT_DIR"
 cat >"$PREFLIGHT_DIR/voiders.conf" <<EOF
 repository=$VOIDERS_REPO
 EOF
-cat >"$PREFLIGHT_DIR/disable-x11-bell.conf" <<'EOF'
-# Do not keep Xwayland alive solely to provide the legacy X11 bell.
-context.properties = {
-    module.x11.bell = false
-}
-EOF
 cat >"$PREFLIGHT_DIR/tlp-default-profile.conf" <<'EOF'
 # Start TLP in power-saver mode instead of selecting a profile by power source.
 TLP_AUTO_SWITCH=0
@@ -520,7 +486,6 @@ require_root_link_state /etc/alsa/conf.d/50-pipewire.conf /usr/share/alsa/alsa.c
 require_root_link_state /etc/alsa/conf.d/99-pipewire-default.conf /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf
 require_user_link_state "$PIPEWIRE_DIR/10-wireplumber.conf" /usr/share/examples/wireplumber/10-wireplumber.conf
 require_user_link_state "$PIPEWIRE_DIR/20-pipewire-pulse.conf" /usr/share/examples/pipewire/20-pipewire-pulse.conf
-require_user_file_state "$PIPEWIRE_DIR/30-disable-x11-bell.conf" "$PREFLIGHT_DIR/disable-x11-bell.conf"
 
 echo "Voiders repository expected fingerprint: $VOIDERS_FINGERPRINT"
 echo "==> Authenticating and enabling the Voiders repository"
@@ -659,7 +624,8 @@ sudo xbps-install -y engrampa Thunar tumbler ffmpegthumbnailer thunar-volman thu
 
 
 # Audio and Bluetooth; elogind supplies device ACLs instead of an audio group.
-sudo xbps-install -y bluez alsa-utils alsa-pipewire libjack-pipewire libspa-bluetooth pipewire wireplumber wireplumber-elogind
+# util-linux supplies setsid for session-scoped audio cleanup. JACK is optional.
+sudo xbps-install -y util-linux bluez alsa-utils alsa-pipewire libspa-bluetooth pipewire wireplumber wireplumber-elogind
 
 # Install and configure the remaining system services before touching user
 # dotfiles. Install iwd while the existing network connection is still intact.
@@ -679,7 +645,6 @@ sudo tlp start
 # Inject fallback symlink pointing to TLP interface pretending to be power-profile-daemon.
 sudo ln -s /usr/bin/tlpctl /usr/local/bin/powerprofilesctl
 
-enable_service alsa
 sudo usermod -aG bluetooth "$REAL_USER"
 sudo rfkill unblock bluetooth || true
 enable_service bluetoothd
@@ -731,16 +696,14 @@ for name in .bashrc .bash_profile .inputrc .vimrc; do
   echo "backup: $BACKUP_DIR/$name"
 done
 
-# Sway starts PipeWire; these drop-ins start its session services and prevent
-# the X11 bell module from keeping an otherwise-unused Xwayland process alive.
-# Revalidate immediately before each no-clobber install to close the gap between
-# preflight and mutation.
+# The Sway session wrapper starts PipeWire as the user. These standard Void
+# drop-ins launch WirePlumber and the PulseAudio-compatible server.
+# Revalidate immediately before each no-clobber install.
 ensure_user_directory "$USER_HOME/.config"
 ensure_user_directory "$USER_HOME/.config/pipewire"
 ensure_user_directory "$PIPEWIRE_DIR"
 install_user_link_if_absent "$PIPEWIRE_DIR/10-wireplumber.conf" /usr/share/examples/wireplumber/10-wireplumber.conf
 install_user_link_if_absent "$PIPEWIRE_DIR/20-pipewire-pulse.conf" /usr/share/examples/pipewire/20-pipewire-pulse.conf
-install_user_file_if_absent "$PIPEWIRE_DIR/30-disable-x11-bell.conf" "$PREFLIGHT_DIR/disable-x11-bell.conf"
 
 # Build an argument for every non-hidden top-level package directory. This is
 # equivalent to running `stow */` inside the checkout, while making the source
@@ -789,15 +752,13 @@ curl -fL --retry 3 -o "$PREFLIGHT_DIR/zed-install.sh" https://zed.dev/install.sh
 chmod 0644 "$PREFLIGHT_DIR/zed-install.sh"
 run_as_user env ZED_CHANNEL=stable sh "$PREFLIGHT_DIR/zed-install.sh"
 
-SWAY_CONFIG="$USER_HOME/.config/sway/config"
-AUDIO_START="$USER_HOME/.config/sway/scripts/start-audio.sh"
+SESSION_START="$USER_HOME/.config/sway/scripts/start-session.sh"
 
-if ! grep -q 'scripts/start-audio.sh' "$SWAY_CONFIG" 2>/dev/null; then
-  echo "warning: $SWAY_CONFIG does not start scripts/start-audio.sh" >&2
-fi
-
-if [ ! -x "$AUDIO_START" ]; then
-  echo "warning: $AUDIO_START is missing or not executable" >&2
+if [ ! -x "$SESSION_START" ] ||
+  ! grep -q 'scripts/start-session.sh' "$USER_HOME/.bash_profile"; then
+  echo "error: dotfiles must include the Sway session wrapper and login startup" >&2
+  echo "update $DOTFILES_DIR before rerunning the installer" >&2
+  exit 1
 fi
 
 # Managed-content templates are no longer needed. Keep the shared cleanup

@@ -1,19 +1,13 @@
-# Void Linux Sway + Noctalia (elogind)
+# Void Linux · Sway + Noctalia
 
-Installer scripts for setting up a Void Linux Sway desktop with Noctalia,
-PipeWire, elogind, and Intel graphics support.
-
-The main installer is intended for x86_64 glibc systems with an Intel GPU. It
-also clones [dotfiles-stow](https://github.com/simple-sketch/dotfiles-stow) to
-`~/dotfiles-stow` and uses GNU Stow to link the desktop configuration.
-
-## Requirements
-
-- Void Linux with working networking
-- A normal user with `sudo`
-- Intel GPU
+Sets up an Intel desktop with Sway, Noctalia, elogind, PipeWire, Bluetooth,
+and iwd. Clones [dotfiles-stow](https://github.com/simple-sketch/dotfiles-stow)
+to `~/dotfiles-stow` and links the configuration with GNU Stow.
 
 ## Install
+
+Requires **Void Linux x86_64 glibc**, an Intel GPU, working networking,
+and a normal user with `sudo`. Do not combine this setup with seatd or turnstile.
 
 Run as your normal user:
 
@@ -22,13 +16,13 @@ Run as your normal user:
 sudo reboot
 ```
 
-The installer can be rerun if a download fails.
+Log in on **tty1** to start Sway automatically. The installer can be rerun
+if a download fails.
 
 ## Wi-Fi
 
-By default, the installer will not interrupt an active `wpa_supplicant`
-connection. If `wpa_supplicant` is enabled, finish the install first, then switch
-to iwd manually:
+An enabled `wpa_supplicant` is left running to avoid dropping your connection.
+To switch to iwd afterward, use Ethernet or be prepared to reconnect:
 
 ```sh
 sudo sv -w 15 stop wpa_supplicant
@@ -39,25 +33,27 @@ sudo sv up iwd
 sudo iwctl
 ```
 
-Only force the switch during install if Ethernet is available or iwd is already
-configured:
+To switch during installation instead, use `IWD_SWITCH=force ./install.sh`
+only with Ethernet available or iwd already configured.
+
+## Sound and Bluetooth
+
+Use Noctalia's panels to pair Bluetooth devices and select audio outputs.
+For music, choose the headset's A2DP profile when available.
+
+PipeWire starts with Sway and stops on logout. Do not run a separate
+PulseAudio server alongside it. Reboot once after updating an old setup.
+
+## Checks
 
 ```sh
-IWD_SWITCH=force ./install.sh
-```
-
-## Check services
-
-After reboot:
-
-```sh
-sudo sv status dbus elogind polkitd socklog-unix nanoklogd dhcpcd tlp tlp-pd
-sudo tlp-stat -s
+sudo sv status dbus elogind bluetoothd
 loginctl session-status
 wpctl status
+bluetoothctl show
 ```
 
-Group changes take effect after logging in again.
+Sway startup logs: `~/.local/state/sway.log`. System logs: `svlogtail`.
 
 ## Optional
 
