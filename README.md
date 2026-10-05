@@ -41,8 +41,14 @@ only with Ethernet available or iwd already configured.
 Use Noctalia's panels to pair Bluetooth devices and select audio outputs.
 For music, choose the headset's A2DP profile when available.
 
-PipeWire starts with Sway and stops on logout. Do not run a separate
-PulseAudio server alongside it. Reboot once after updating an old setup.
+The login profile launches `dbus-run-session sway`. Sway's config starts
+`~/.config/sway/scripts/start-audio.sh`, which stops audio when Sway exits.
+The `pipewire` Stow package owns the WirePlumber and pipewire-pulse drop-ins;
+the installer migrates its old example-file links to that package without
+replacing unrelated configuration.
+
+Do not run a separate PulseAudio server alongside PipeWire. Reboot once
+after updating an old setup.
 
 ## Checks
 

@@ -206,17 +206,55 @@ require_root_link_state() {
   fi
 }
 
-require_user_link_state() {
-  managed_path=$1
-  expected_target=$2
+# Accept only absent files, old installer links, or links into the matching
+# Stow package. readlink -m also handles a checkout not yet cloned.
+require_pipewire_dropin_state() {
+  dropin_name=$1
+  legacy_target=$2
+  dropin_path="$PIPEWIRE_DIR/$dropin_name"
+  stow_target="$DOTFILES_DIR/pipewire/.config/pipewire/pipewire.conf.d/$dropin_name"
 
-  user_path_exists "$managed_path" || return 0
+  user_path_exists "$dropin_path" || return 0
+  if run_as_user test -L "$dropin_path"; then
+    if [ "$(run_as_user readlink "$dropin_path")" = "$legacy_target" ] ||
+      [ "$(run_as_user readlink -m "$dropin_path")" = "$(run_as_user readlink -m "$stow_target")" ]; then
+      return 0
+    fi
+  fi
 
-  if ! run_as_user test -L "$managed_path" ||
-    [ "$(run_as_user readlink "$managed_path")" != "$expected_target" ]; then
-    echo "configuration collision: $managed_path must link to $expected_target" >&2
-    echo "move or remove it, then rerun the installer" >&2
-    exit 1
+  echo "configuration collision: $dropin_path is not an installer or Stow-managed link" >&2
+  echo "move or remove it, then rerun the installer" >&2
+  exit 1
+}
+
+migrate_pipewire_dropin() {
+  require_pipewire_dropin_state "$1" "$2"
+  user_path_exists "$dropin_path" || return 0
+  previous_target=$(run_as_user readlink "$dropin_path") || return 1
+
+  # Use Stow's relative link spelling: absolute links into the package are
+  # not recognized as owned by Stow. Leave working links even on later failure.
+  run_as_user test -f "$stow_target" || {
+    echo "error: missing PipeWire drop-in in dotfiles: $stow_target" >&2
+    return 1
+  }
+  stow_link=$(run_as_user realpath --relative-to="$PIPEWIRE_DIR" "$stow_target") || return 1
+  [ "$previous_target" = "$stow_link" ] && return 0
+  run_as_user rm -- "$dropin_path" || return 1
+  if ! run_as_user ln -s "$stow_link" "$dropin_path"; then
+    # No-clobber restoration if creation failed; preserve any new occupant.
+    run_as_user ln -s "$previous_target" "$dropin_path" || true
+    return 1
+  fi
+}
+
+validate_sway_startup() {
+  if ! run_as_user test -x "$USER_HOME/.config/sway/scripts/start-audio.sh" ||
+    ! run_as_user grep -Eq '^[[:space:]]*exec[[:space:]]+dbus-run-session[[:space:]]+sway([[:space:]]|$)' "$USER_HOME/.bash_profile" ||
+    ! run_as_user grep -Eq '^[[:space:]]*exec[[:space:]].*scripts/start-audio[.]sh' "$USER_HOME/.config/sway/config"; then
+    echo "error: dotfiles must launch Sway from the login profile and audio from the Sway config" >&2
+    echo "update $DOTFILES_DIR before rerunning the installer" >&2
+    return 1
   fi
 }
 
@@ -285,18 +323,6 @@ install_root_link_if_absent() {
   if ! sudo ln -s "$expected_target" "$managed_path"; then
     require_root_link_state "$managed_path" "$expected_target"
     root_path_exists "$managed_path" || return 1
-  fi
-}
-
-install_user_link_if_absent() {
-  managed_path=$1
-  expected_target=$2
-  require_user_link_state "$managed_path" "$expected_target"
-  user_path_exists "$managed_path" && return 0
-
-  if ! run_as_user ln -s "$expected_target" "$managed_path"; then
-    require_user_link_state "$managed_path" "$expected_target"
-    user_path_exists "$managed_path" || return 1
   fi
 }
 
@@ -484,8 +510,8 @@ require_root_file_state /etc/xbps.d/10-voiders-community.conf "$PREFLIGHT_DIR/vo
 require_root_file_state /etc/tlp.d/99-default-power-saver.conf "$PREFLIGHT_DIR/tlp-default-profile.conf"
 require_root_link_state /etc/alsa/conf.d/50-pipewire.conf /usr/share/alsa/alsa.conf.d/50-pipewire.conf
 require_root_link_state /etc/alsa/conf.d/99-pipewire-default.conf /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf
-require_user_link_state "$PIPEWIRE_DIR/10-wireplumber.conf" /usr/share/examples/wireplumber/10-wireplumber.conf
-require_user_link_state "$PIPEWIRE_DIR/20-pipewire-pulse.conf" /usr/share/examples/pipewire/20-pipewire-pulse.conf
+require_pipewire_dropin_state 10-wireplumber.conf /usr/share/examples/wireplumber/10-wireplumber.conf
+require_pipewire_dropin_state 20-pipewire-pulse.conf /usr/share/examples/pipewire/20-pipewire-pulse.conf
 
 echo "Voiders repository expected fingerprint: $VOIDERS_FINGERPRINT"
 echo "==> Authenticating and enabling the Voiders repository"
@@ -624,7 +650,7 @@ sudo xbps-install -y engrampa Thunar tumbler ffmpegthumbnailer thunar-volman thu
 
 
 # Audio and Bluetooth; elogind supplies device ACLs instead of an audio group.
-# util-linux supplies setsid for session-scoped audio cleanup. JACK is optional.
+# util-linux supplies setsid and flock for session-scoped audio cleanup. JACK is optional.
 sudo xbps-install -y util-linux bluez alsa-utils alsa-pipewire libspa-bluetooth pipewire wireplumber wireplumber-elogind
 
 # Install and configure the remaining system services before touching user
@@ -696,14 +722,21 @@ for name in .bashrc .bash_profile .inputrc .vimrc; do
   echo "backup: $BACKUP_DIR/$name"
 done
 
-# The Sway session wrapper starts PipeWire as the user. These standard Void
-# drop-ins launch WirePlumber and the PulseAudio-compatible server.
-# Revalidate immediately before each no-clobber install.
+# Sway's audio helper starts PipeWire as the user. Stow owns the drop-ins
+# that launch WirePlumber and pipewire-pulse; migrate only old installer links.
+# Keep shared parent directories unfolded so rerun preflight sees real dirs.
 ensure_user_directory "$USER_HOME/.config"
 ensure_user_directory "$USER_HOME/.config/pipewire"
 ensure_user_directory "$PIPEWIRE_DIR"
-install_user_link_if_absent "$PIPEWIRE_DIR/10-wireplumber.conf" /usr/share/examples/wireplumber/10-wireplumber.conf
-install_user_link_if_absent "$PIPEWIRE_DIR/20-pipewire-pulse.conf" /usr/share/examples/pipewire/20-pipewire-pulse.conf
+for dropin in 10-wireplumber.conf 20-pipewire-pulse.conf; do
+  if ! run_as_user test -f "$DOTFILES_DIR/pipewire/.config/pipewire/pipewire.conf.d/$dropin"; then
+    echo "error: missing PipeWire drop-in in dotfiles: $dropin" >&2
+    echo "update $DOTFILES_DIR before rerunning the installer" >&2
+    exit 1
+  fi
+done
+migrate_pipewire_dropin 10-wireplumber.conf /usr/share/examples/wireplumber/10-wireplumber.conf
+migrate_pipewire_dropin 20-pipewire-pulse.conf /usr/share/examples/pipewire/20-pipewire-pulse.conf
 
 # Build an argument for every non-hidden top-level package directory. This is
 # equivalent to running `stow */` inside the checkout, while making the source
@@ -752,14 +785,7 @@ curl -fL --retry 3 -o "$PREFLIGHT_DIR/zed-install.sh" https://zed.dev/install.sh
 chmod 0644 "$PREFLIGHT_DIR/zed-install.sh"
 run_as_user env ZED_CHANNEL=stable sh "$PREFLIGHT_DIR/zed-install.sh"
 
-SESSION_START="$USER_HOME/.config/sway/scripts/start-session.sh"
-
-if [ ! -x "$SESSION_START" ] ||
-  ! grep -q 'scripts/start-session.sh' "$USER_HOME/.bash_profile"; then
-  echo "error: dotfiles must include the Sway session wrapper and login startup" >&2
-  echo "update $DOTFILES_DIR before rerunning the installer" >&2
-  exit 1
-fi
+validate_sway_startup
 
 # Managed-content templates are no longer needed. Keep the shared cleanup
 # handler installed for the wireless handoff and any signals during it.
