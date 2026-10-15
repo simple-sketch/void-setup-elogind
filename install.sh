@@ -644,7 +644,7 @@ sudo xbps-install -y python3 python3-gobject python3-cairo gtk+3
 sudo xbps-install -y engrampa Thunar tumbler ffmpegthumbnailer thunar-volman thunar-archive-plugin gvfs tldr github-cli gnome-keyring \
   perl-File-MimeInfo shfmt shellcheck ddcutil kitty swayimg nodejs openjdk25 delta git eza \
   bash bash-completion stow neovide shikane alacritty wmenu vim newsboat \
-  playerctl libnotify btop fastfetch brightnessctl base-devel wl-clipboard sway foot firefox \
+  playerctl libnotify btop fastfetch brightnessctl base-devel wl-clipboard wtype sway foot firefox \
   vlc xtools vsv lazygit neovim ghostty rsync yazi bat upower \
   ffmpeg 7zip unzip zip unrar ouch jq poppler fd ripgrep fzf zoxide resvg ImageMagick noctalia bibata-modern-ice
 
