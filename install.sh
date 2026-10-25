@@ -512,6 +512,7 @@ require_root_link_state /etc/alsa/conf.d/50-pipewire.conf /usr/share/alsa/alsa.c
 require_root_link_state /etc/alsa/conf.d/99-pipewire-default.conf /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf
 require_pipewire_dropin_state 10-wireplumber.conf /usr/share/examples/wireplumber/10-wireplumber.conf
 require_pipewire_dropin_state 20-pipewire-pulse.conf /usr/share/examples/pipewire/20-pipewire-pulse.conf
+require_pipewire_dropin_state 30-disable-x11-bell.conf ''
 
 echo "Voiders repository expected fingerprint: $VOIDERS_FINGERPRINT"
 echo "==> Authenticating and enabling the Voiders repository"
@@ -723,12 +724,13 @@ for name in .bashrc .bash_profile .inputrc .vimrc; do
 done
 
 # Sway's audio helper starts PipeWire as the user. Stow owns the drop-ins
-# that launch WirePlumber and pipewire-pulse; migrate only old installer links.
+# for WirePlumber, pipewire-pulse, and the X11 bell setting.
+# Migrate only old installer links.
 # Keep shared parent directories unfolded so rerun preflight sees real dirs.
 ensure_user_directory "$USER_HOME/.config"
 ensure_user_directory "$USER_HOME/.config/pipewire"
 ensure_user_directory "$PIPEWIRE_DIR"
-for dropin in 10-wireplumber.conf 20-pipewire-pulse.conf; do
+for dropin in 10-wireplumber.conf 20-pipewire-pulse.conf 30-disable-x11-bell.conf; do
   if ! run_as_user test -f "$DOTFILES_DIR/pipewire/.config/pipewire/pipewire.conf.d/$dropin"; then
     echo "error: missing PipeWire drop-in in dotfiles: $dropin" >&2
     echo "update $DOTFILES_DIR before rerunning the installer" >&2
