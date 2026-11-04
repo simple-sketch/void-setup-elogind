@@ -647,7 +647,7 @@ sudo xbps-install -y engrampa Thunar tumbler ffmpegthumbnailer thunar-volman thu
   bash bash-completion stow neovide shikane alacritty wmenu vim newsboat \
   playerctl libnotify btop fastfetch brightnessctl base-devel wl-clipboard sway foot firefox \
   vlc xtools vsv lazygit neovim ghostty rsync yazi bat upower \
-  ffmpeg 7zip unzip zip unrar ouch jq poppler fd ripgrep fzf zoxide resvg ImageMagick noctalia bibata-cursor-theme
+  ffmpeg 7zip unzip zip unrar ouch jq poppler fd ripgrep fzf zoxide resvg ImageMagick noctalia sound-theme-freedesktop bibata-cursor-theme
 
 
 # Audio and Bluetooth; elogind supplies device ACLs instead of an audio group.
