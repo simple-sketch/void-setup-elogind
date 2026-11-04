@@ -668,9 +668,6 @@ enable_service tlp
 enable_service tlp-pd
 sudo tlp start
 
-# Noctalia targets powerprofilesctl to gather active hardware state and switch settings.
-# Inject fallback symlink pointing to TLP interface pretending to be power-profile-daemon.
-sudo ln -s /usr/bin/tlpctl /usr/local/bin/powerprofilesctl
 
 sudo usermod -aG bluetooth "$REAL_USER"
 sudo rfkill unblock bluetooth || true
