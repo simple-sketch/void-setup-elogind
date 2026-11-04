@@ -19,10 +19,10 @@ if [ "$XBPS_ARCH" != x86_64 ]; then
 fi
 
 DOTFILES_REPO="https://github.com/simple-sketch/dotfiles-stow"
-VOIDERS_REPO="https://repo.voiders.dev"
+UNIVERSAL_REPO="https://universalrepo.pages.dev/void"
 # Published independently of the repository metadata at:
-# https://codeberg.org/voiders-community/repository
-VOIDERS_FINGERPRINT="a8:f0:05:df:01:c4:37:92:83:f6:8b:9a:ce:ab:73:29"
+# https://universalrepo.pages.dev/wiki/install/void
+UNIVERSAL_FINGERPRINT="0f:fa:c3:8e:fd:cd:c9:52:88:f0:34:ca:df:6c:c6:fa"
 
 if [ "$(id -u)" -eq 0 ]; then
   REAL_USER=${SUDO_USER:-}
@@ -416,8 +416,8 @@ trap 'exit 143' TERM
 PREFLIGHT_DIR=$(mktemp -d)
 chmod 0755 "$PREFLIGHT_DIR"
 
-cat >"$PREFLIGHT_DIR/voiders.conf" <<EOF
-repository=$VOIDERS_REPO
+cat >"$PREFLIGHT_DIR/universalrepository.conf" <<EOF
+repository=$UNIVERSAL_REPO
 EOF
 cat >"$PREFLIGHT_DIR/tlp-default-profile.conf" <<'EOF'
 # Start TLP in power-saver mode instead of selecting a profile by power source.
@@ -506,7 +506,7 @@ require_root_directory_or_absent /etc/tlp.d
 require_user_directory_or_absent "$USER_HOME/.config"
 require_user_directory_or_absent "$USER_HOME/.config/pipewire"
 require_user_directory_or_absent "$PIPEWIRE_DIR"
-require_root_file_state /etc/xbps.d/10-voiders-community.conf "$PREFLIGHT_DIR/voiders.conf"
+require_root_file_state /etc/xbps.d/10-universalrepository.conf "$PREFLIGHT_DIR/universalrepository.conf"
 require_root_file_state /etc/tlp.d/99-default-power-saver.conf "$PREFLIGHT_DIR/tlp-default-profile.conf"
 require_root_link_state /etc/alsa/conf.d/50-pipewire.conf /usr/share/alsa/alsa.conf.d/50-pipewire.conf
 require_root_link_state /etc/alsa/conf.d/99-pipewire-default.conf /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf
@@ -514,32 +514,32 @@ require_pipewire_dropin_state 10-wireplumber.conf /usr/share/examples/wireplumbe
 require_pipewire_dropin_state 20-pipewire-pulse.conf /usr/share/examples/pipewire/20-pipewire-pulse.conf
 require_pipewire_dropin_state 30-disable-x11-bell.conf ''
 
-echo "Voiders repository expected fingerprint: $VOIDERS_FINGERPRINT"
-echo "==> Authenticating and enabling the Voiders repository"
+echo "UniversalRepository expected fingerprint: $UNIVERSAL_FINGERPRINT"
+echo "==> Authenticating and enabling UniversalRepository"
 
 # Ignore configured repositories and sync only this URL. Do not persist its
 # configuration until both the signed-repository marker and fingerprint match.
-sudo xbps-install -i --repository="$VOIDERS_REPO" -S
+sudo xbps-install -i --repository="$UNIVERSAL_REPO" -S
 
-VOIDERS_REPO_DETAILS=$(xbps-query -i --repository="$VOIDERS_REPO" -vL) || {
-  echo "error: could not inspect the active Voiders repository signature" >&2
+UNIVERSAL_REPO_DETAILS=$(xbps-query -i --repository="$UNIVERSAL_REPO" -vL) || {
+  echo "error: could not inspect the active UniversalRepository signature" >&2
   exit 1
 }
 
-SIGNED_VOIDERS_REPOSITORIES=$(printf '%s\n' "$VOIDERS_REPO_DETAILS" | awk -v repo="$VOIDERS_REPO" '
+SIGNED_UNIVERSAL_REPOSITORIES=$(printf '%s\n' "$UNIVERSAL_REPO_DETAILS" | awk -v repo="$UNIVERSAL_REPO" '
   $1 ~ /^[[:digit:]]+$/ && $2 == repo && $3 == "(RSA" && $4 == "signed)" && NF == 4 {
     signed_repositories++
   }
   END { print signed_repositories + 0 }
 ')
 
-if [ "$SIGNED_VOIDERS_REPOSITORIES" -ne 1 ]; then
-  echo "error: the exact Voiders repository is not reported once as RSA signed" >&2
-  printf '%s\n' "$VOIDERS_REPO_DETAILS" >&2
+if [ "$SIGNED_UNIVERSAL_REPOSITORIES" -ne 1 ]; then
+  echo "error: the exact UniversalRepository is not reported once as RSA signed" >&2
+  printf '%s\n' "$UNIVERSAL_REPO_DETAILS" >&2
   exit 1
 fi
 
-ACTIVE_VOIDERS_FINGERPRINTS=$(printf '%s\n' "$VOIDERS_REPO_DETAILS" | awk '
+ACTIVE_UNIVERSAL_FINGERPRINTS=$(printf '%s\n' "$UNIVERSAL_REPO_DETAILS" | awk '
   {
     for (field = 1; field <= NF; field++) {
       count = split($field, octet, ":")
@@ -559,17 +559,17 @@ ACTIVE_VOIDERS_FINGERPRINTS=$(printf '%s\n' "$VOIDERS_REPO_DETAILS" | awk '
   }
 ')
 
-if [ "$ACTIVE_VOIDERS_FINGERPRINTS" != "$VOIDERS_FINGERPRINT" ]; then
-  echo "error: Voiders repository fingerprint verification failed" >&2
-  echo "expected exactly: $VOIDERS_FINGERPRINT" >&2
-  echo "active fingerprint(s): ${ACTIVE_VOIDERS_FINGERPRINTS:-<missing>}" >&2
+if [ "$ACTIVE_UNIVERSAL_FINGERPRINTS" != "$UNIVERSAL_FINGERPRINT" ]; then
+  echo "error: UniversalRepository fingerprint verification failed" >&2
+  echo "expected exactly: $UNIVERSAL_FINGERPRINT" >&2
+  echo "active fingerprint(s): ${ACTIVE_UNIVERSAL_FINGERPRINTS:-<missing>}" >&2
   exit 1
 fi
 
 # Persist the repository only after authentication. The no-clobber helper
 # revalidates immediately before creation and never replaces differing state.
 ensure_root_directory /etc/xbps.d
-install_root_file_if_absent /etc/xbps.d/10-voiders-community.conf "$PREFLIGHT_DIR/voiders.conf"
+install_root_file_if_absent /etc/xbps.d/10-universalrepository.conf "$PREFLIGHT_DIR/universalrepository.conf"
 
 # Update XBPS only after the third-party repository has been authenticated.
 sudo xbps-install -Syu xbps
