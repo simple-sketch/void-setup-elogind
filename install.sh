@@ -249,10 +249,20 @@ migrate_pipewire_dropin() {
 }
 
 validate_sway_startup() {
-  if ! run_as_user test -x "$USER_HOME/.config/sway/scripts/start-audio.sh" ||
-    ! run_as_user grep -Eq '^[[:space:]]*exec[[:space:]]+dbus-run-session[[:space:]]+sway([[:space:]]|$)' "$USER_HOME/.bash_profile" ||
-    ! run_as_user grep -Eq '^[[:space:]]*exec[[:space:]].*scripts/start-audio[.]sh' "$USER_HOME/.config/sway/config"; then
-    echo "error: dotfiles must launch Sway from the login profile and audio from the Sway config" >&2
+  startup_valid=true
+  if ! run_as_user test -x "$USER_HOME/.config/sway/scripts/audio/start-audio.sh"; then
+    echo "error: missing or non-executable $USER_HOME/.config/sway/scripts/audio/start-audio.sh" >&2
+    startup_valid=false
+  fi
+  if ! run_as_user grep -Eq '^[[:space:]]*exec[[:space:]]+dbus-run-session[[:space:]]+sway([[:space:]]|$)' "$USER_HOME/.bash_profile"; then
+    echo "error: $USER_HOME/.bash_profile must launch Sway with exec dbus-run-session sway" >&2
+    startup_valid=false
+  fi
+  if ! run_as_user grep -Eq '^[[:space:]]*exec[[:space:]].*scripts/audio/start-audio[.]sh' "$USER_HOME/.config/sway/config"; then
+    echo "error: $USER_HOME/.config/sway/config must launch scripts/audio/start-audio.sh" >&2
+    startup_valid=false
+  fi
+  if [ "$startup_valid" = false ]; then
     echo "update $DOTFILES_DIR before rerunning the installer" >&2
     return 1
   fi
