@@ -19,6 +19,34 @@ sudo reboot
 Log in on **tty1** to start Sway automatically. The installer can be rerun
 if a download fails.
 
+## Simplified installer
+
+For a smaller, straightforward version of the full desktop setup:
+
+```sh
+./install-simple.sh
+sudo reboot
+```
+
+Run as your normal user, **not** with `sudo`. The original `install.sh` is
+unchanged. Both scripts target the same Intel / x86_64 glibc desktop.
+
+The simplified script installs the same desktop packages, configures ALSA and
+a default TLP profile, starts the runit services, clones/stows the dotfiles,
+installs Yazi plugins, and installs Zed if missing. It updates the system and
+asks you to trust the UniversalRepository key on first use; check the printed
+fingerprint before accepting.
+
+Reruns reuse installed packages and the existing dotfiles checkout (without
+pulling or discarding local edits). Existing TLP settings are kept. Regular
+shell/editor defaults are backed up under `~/.dotfiles-backup/`; other Stow
+conflicts stop the script rather than overwrite your files. It has no automatic
+rollback: fix a reported problem and rerun, or restore the printed backup.
+
+An existing network service is left alone; there is no forced Wi-Fi switch.
+PipeWire runs in the user session through the dotfiles, not as a system service.
+The optional fonts and Flatpak scripts remain separate.
+
 ## Wi-Fi
 
 An enabled `wpa_supplicant` is left running to avoid dropping your connection.
